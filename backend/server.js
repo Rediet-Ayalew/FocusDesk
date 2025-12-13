@@ -75,7 +75,7 @@ const User = mongoose.model('User', userSchema);
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  '${process.env.BACKEND_URL}/api/auth/callback'
+  `${process.env.BACKEND_URL}/api/auth/callback`
 );
 
 // Helper function
@@ -129,10 +129,10 @@ app.get('/api/auth/callback', async (req, res) => {
     }
     
     req.session.userId = user._id;
-    res.redirect('${process.env.FRONTEND_URL}?auth=success');
+    res.redirect(`${process.env.FRONTEND_URL}?auth=success`);
   } catch (error) {
     console.error('Auth error:', error);
-    res.redirect('${process.env.FRONTEND_URL}?auth=failed');
+    res.redirect(`${process.env.FRONTEND_URL}?auth=failed`);
   }
 });
 
