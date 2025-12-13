@@ -6,12 +6,10 @@ FocusDesk is a website that links your google calendar to a to-do list to keep d
 
 Briefly describe:
 
-* What your application does
-* Who it’s for
-* The core problem it solves
 
 **Example:**
-A full-stack habit tracking app that helps users build routines and visualize streaks over time. Includes authentication and dynamic data visualizations.
+
+A full stack To Do List called FocusDesk which is a productivity web application designed to help students stay organized by combining task management with Google Calendar integration. 
 
 ---
 
@@ -29,24 +27,24 @@ A full-stack habit tracking app that helps users build routines and visualize st
 
 List **3–6 key features**, ideally with short bullets:
 
-* Create, read, update, and delete **[core resource name]**
-* Responsive UI with reusable components
-* Backend API with full CRUD operations
-* Data persisted in MongoDB
-* Advanced feature: *describe yours clearly*
-* Error handling on client + server
+* Create, read, update, and delete from MongoDB
+* Sync tasks directly from Google Calendar
+* Full CRUD backend API with Express and MongoDB
+* Google OAuth login with session-based authentication
+* Advanced feature: Drag-and-drop task management with progress tracking
+* Client and server-side error handling
 
 ### **Advanced Feature**
-
-Describe which advanced feature you implemented and **1–2 sentences** about how it works:
-
+Google Calendar Integration:
+The app integrates the Google Calendar API to sync a user’s calendar events into the task manager. After signing in with Google, events are fetched from the user’s calendar and automatically converted into tasks that can be organized and tracked within the app.
 
 ---
 
 ## 📸 Screenshots
 
-> Include 2–4 screenshots of your app.
-> Use relative paths (e.g., `/screenshots/home.png`) or full URLs.
+Relative path- 
+Screenshots/MainPage.png
+Screenshots/signIn.png
 ---
 
 ## 🏗️ Project Architecture
@@ -55,20 +53,32 @@ Describe how the pieces fit together.
 
 ```
 /frontend
+  /public
+   vite.svg
   /src
-    /components
-    /pages
-    App.jsx
-    main.jsx
+   /api
+    /calendarTasks.js
+   /assets
+   App.css
+   App.jsx
+   index.css
+   Main.jsx
+ .env
+ index.html
+ package-lock.json
+ package.json
 /backend
-  /models
-  /routes
+  package-lock.json
+  package.json
   server.js
+.env
+/Screenshots
+  MainPage.png
+  signIn.png
 ```
 
-Include a sentence explaining the flow:
+The React frontend sends requests to the Express backend through defined API routes, the backend handles authentication and task data while storing information in MongoDB, and environment variables in both the frontend and backend securely manage API URLs and sensitive credentials.
 
-> The React frontend communicates with the Express backend through API routes. The backend interacts with MongoDB using Mongoose models, and environment variables are used to store secrets.
 ---
 
 ## 📦 Installation & Setup
@@ -76,8 +86,8 @@ Include a sentence explaining the flow:
 ### **1. Clone the project**
 
 ```bash
-git clone https://github.com/your-username/your-project.git
-cd your-project
+git clone https://github.com/Rediet-Ayalew/FocusDesk.git
+cd FocusDesk
 ```
 
 ---
@@ -89,16 +99,23 @@ Include a `.env.example` file in both repos.
 **Backend `.env.example`:**
 
 ```
-MONGO_URI=your_mongodb_url
-PORT=4000
-JWT_SECRET=your_secret_if_using_auth
-API_KEY=if_using_external_apis
+MONGO_URI=your_mongodb_ur
+PORT=5000
+
+
+GOOGLE_CLIENT_ID= your google client id
+GOOGLE_CLIENT_SECRET= your google client secret
+GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/callback
+BACKEND_URL=http://localhost:5000
+FRONTEND_URL=http://localhost:5173
+
+SESSION_SECRET= random string 
 ```
 
 **Frontend `.env.example`:**
 
 ```
-VITE_API_URL=https://your-backend-url.com
+VITE_API_URL=https://focusdesk-nrih.onrender.com
 ```
 
 ---
@@ -136,31 +153,53 @@ npm run dev
 
 Document the **main 3–5 routes**:
 
-### **GET /api/resource**
 
-Returns all resources.
+### **GET /api/tasks**
+Returns all tasks for the authenticated user
 
-### **POST /api/resource**
 
-Creates a new resource.
+### **POST /api/tasks**
+Creates a new task.
 Body example:
+
 
 ```json
 {
-  "name": "Example",
-  "description": "Text here"
+  "title": "Finish homework",
+  "dueDate": "2025-12-15",
+  "progress": "Not Started"
 }
+
+
 ```
 
-### **PATCH /api/resource/:id**
 
-Updates a resource.
+### **PATCH /api/tasks/:id**
+Updates an existing task (e.g., progress or due date).
 
-### **DELETE /api/resource/:id**
 
-Deletes a resource.
+### **DELETE /api/tasks/:id**
+Deletes a tasks by userid.
 
-> Add additional routes if needed (auth, file uploads, WebSockets, etc.).
+### **GET /api/auth/google**
+Start Google OAuth login
+
+### **GET /api/auth/status**
+Checks whether the user is authenticated via Google OAuth.
+
+### **GET /api/auth/google/callback**
+Google redirects here after login
+
+
+### **GET /api/google**
+Initiates Google authentication flow.
+
+### **POST /api/auth/logout**
+sign out user
+
+### **POST /api/sync** 
+sync events from Google Calendar into tasks
+
 ---
 
 ## 🚀 Deployment Notes
@@ -169,13 +208,20 @@ Document where/how you deployed:
 
 ### **Frontend**
 
-* Vercel / Netlify
-* Explain build command if different (`npm run build`)
+*Deployed on Netlify
+*Built using Vite + React
+*Build command: npm run build
+*Environment variables are configured in Netlify (VITE_API_URL) to connect to the backend
+
+
 
 ### **Backend**
 
-* Render / Railway
-* Note environment variable setup
+
+* Deployed on Render
+*Built with Node.js + Express
+*Uses MongoDB for data persistence
+*Environment variables (MongoDB URI, Google OAuth credentials, session secret) are securely configured in Render
 
 
 ---
@@ -183,7 +229,7 @@ Document where/how you deployed:
 ## 🎥 Video Walkthrough
 
 **Link to Loom/YouTube:**
-[https://your-video-link.com](https://your-video-link.com)
+[https://youtu.be/RyL_lwOYDkM](https://youtu.be/RyL_lwOYDkM)
 
 Include quick timestamps if you want extra professionalism:
 
@@ -198,31 +244,48 @@ Include quick timestamps if you want extra professionalism:
 
 *(This section is required for grading.)*
 
+
 ### **1. What was the hardest part of this project?**
 
-Write 3–5 sentences.
+
+The toughest part of building FocusDesk was definitely the deployment and debugging, especially hooking up the backend to the database and getting the Google Calendar API to sync tasks smoothly. I had to fix a bunch of stuff like environment variables, CORS settings, and session handling between Netlify and Render, plus test API calls and sort out MongoDB connections. In the end, it taught me a lot about making apps work in production, like using the right configs and adding good logging.
+
 
 ### **2. What are you most proud of?**
 
-Could be a feature, a UI improvement, debugging work, or personal growth.
+I am most proud of being able to sync google calendar API into my website. when you attempt to resync previous tasks it won't allow you so because it just imports tasks once and saves them in MongoDB for better organization and gives control to the user to add and delete tasks. 
+
 
 ### **3. What would you do differently next time?**
 
-Think in terms of planning, scoping, or tech choices.
+
+I would add signout button and add specific times for deadline instead of only dates. 
+
 
 ### **4. How did you incorporate feedback from the 12/5 check-in gallery?**
 
+
 Be explicit (this is graded):
 
-> “Based on feedback, I reduced scope by removing X and focused on stabilizing Y.”
-> “I reorganized my components for readability after feedback about structure.”
+
+> “I wasn't there that day, but my friend has viewed my website while i was developing it. Her feedback was to make the UX design more attractive and organized. I was able to accomplish that. 
 ---
+
+## note
+
+For the site to function correctly, each person must set up their own Google Calendar API
 
 # Acknowledgments / AI Usage Disclosure
 
+
 > Include a brief note on tools used (per academic integrity guidelines):
-Examples:
+
 
 * “Used ChatGPT to help troubleshoot a CORS issue.”
-* “Used Claude for help writing documentation.”
+* “Used Chatgpt for help writing documentation.”
 * “Used VSCode Copilot for autocomplete suggestions.”
+* “Used VSCode Copilot, chatgpt, and Claude to debug deployment."
+* “Used claude to help me debug the google auth code on server.js.”
+* “Used Claude to fix my Schema.”
+* “Used Claude to sync the google calendar task and fix up the code to drag and drop tasks from incomplete to done or in progress."
+
