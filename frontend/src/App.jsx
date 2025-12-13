@@ -32,7 +32,7 @@ function App() {
    */
   const checkAuth = async () => {
     try {
-      const response = await fetch('${API_URL}/api/auth/status', {
+      const response = await fetch(`${API_URL}/api/auth/status`, {
         credentials: 'include'
       });
       const data = await response.json();
@@ -74,7 +74,7 @@ const handleLogin = async () => {
   const handleSync = async () => {
     try {
       setError(null);
-      const response = await fetch('${API_URL}/api/sync', {
+      const response = await fetch(`${API_URL}/api/sync`, {
         method: 'POST',
         credentials: 'include'
       });
