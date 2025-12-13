@@ -7,6 +7,8 @@ require('dotenv').config();
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // Middleware
 const allowedOrigins = [
   'http://localhost:5173',
@@ -29,12 +31,15 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI 
+  store: MongoStore.create({ 
+    mongoUrl: process.env.MONGODB_URI,
+    touchAfter: 24 * 3600 // lazy session update
   }),
   cookie: {
-    secure: true,
-    sameSite: 'none'
+    secure: true,                    // ✅ Always true for production
+    sameSite: 'none',                // ✅ Required for cross-site
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   }
 }));
 
