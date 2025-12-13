@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { getTasks, createTask, updateTask, deleteTask } from './api/calendarTasks';
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 function App() {
   // State management
@@ -30,7 +32,7 @@ function App() {
    */
   const checkAuth = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/status', {
+      const response = await fetch('${API_URL}/api/auth/status', {
         credentials: 'include'
       });
       const data = await response.json();
@@ -54,9 +56,7 @@ function App() {
    */
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/google');
-      const data = await response.json();
-      window.location.href = data.url;
+      window.location.href = `${API_URL}/api/auth/google`;
     } catch (error) {
       console.error('Login failed:', error);
       setError('Failed to start login process');
@@ -69,7 +69,7 @@ function App() {
   const handleSync = async () => {
     try {
       setError(null);
-      const response = await fetch('http://localhost:5000/api/sync', {
+      const response = await fetch('${API_URL}/api/sync', {
         method: 'POST',
         credentials: 'include'
       });
@@ -137,7 +137,7 @@ function App() {
    */
   const handleDeleteTask = async (taskId) => {
     try {
-      await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+      await fetch(`${API_URL}/api/tasks/${taskId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
