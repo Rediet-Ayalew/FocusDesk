@@ -10,8 +10,7 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://demo.netlify.app'
-];
+  'https://focusdesk0.netlify.app'
 
 app.use(cors({
   origin: function (origin, callback) {
