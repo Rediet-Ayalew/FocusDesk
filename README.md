@@ -118,6 +118,7 @@ npm run dev
 ```bash
 cd backend
 npm install
+npm install connect-mongo@latest
 npm run dev
 ```
 
@@ -125,7 +126,7 @@ npm run dev
 
 ### **4. Running Entire App Locally**
 
-1. Start backend on `http://localhost:4000`
+1. Start backend on `http://localhost:5000`
 2. Start frontend on `http://localhost:5173`
 3. Confirm CORS + API requests are working
 

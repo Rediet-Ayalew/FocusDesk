@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import { getTasks, createTask, updateTask, deleteTask } from './api/calendarTasks';
 const API_URL = import.meta.env.VITE_API_URL;
+console.log('🔍 Environment check:');
+console.log('API_URL:', API_URL);
+console.log('All env vars:', import.meta.env);
 
 
 function App() {
