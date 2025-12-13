@@ -12,6 +12,8 @@ const allowedOrigins = [
   'http://localhost:5173',
   'https://focusdesk0.netlify.app'
 
+];
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
