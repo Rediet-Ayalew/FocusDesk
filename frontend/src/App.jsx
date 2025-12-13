@@ -1,23 +1,23 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import TaskList from './components/TaskList';
 import { getTasks, createTask, updateTask, deleteTask } from './api/calendarTasks';
 
 function App() {
   // State management
   const [tasks, setTasks] = useState([]);
-  const [activeTask, setActiveTask] = useState(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [draggedTask, setDraggedTask] = useState(null);
 
   // Check authentication and load tasks on mount
   useEffect(() => {
     checkAuth();
     
-    // Check for auth callback from Google
+    // this checks auth callback from Google
     const params = new URLSearchParams(window.location.search);
     if (params.get('auth') === 'success') {
       window.history.replaceState({}, '', '/');
@@ -26,7 +26,7 @@ function App() {
   }, []);
 
   /**
-   * Check if user is authenticated
+   * Check whether a user is authenticated or not
    */
   const checkAuth = async () => {
     try {
@@ -50,7 +50,7 @@ function App() {
   };
 
   /**
-   * Handle Google login
+   * Google login
    */
   const handleLogin = async () => {
     try {
@@ -64,7 +64,7 @@ function App() {
   };
 
   /**
-   * Sync with Google Calendar
+   * this allows Sync with the Google Calendar
    */
   const handleSync = async () => {
     try {
@@ -77,7 +77,7 @@ function App() {
       
       if (data.synced > 0) {
         setError(`✅ Synced ${data.synced} new events from Google Calendar!`);
-        loadTasks(); // Reload tasks
+        loadTasks(); 
       } else {
         setError('✅ Calendar is up to date!');
       }
@@ -95,9 +95,13 @@ function App() {
       setLoading(true);
       setError(null);
       const data = await getTasks();
+        console.log('Loaded tasks from API:', data);
+        console.log('Number of tasks:', data?.length);
       setTasks(data);
+        console.log('Tasks state after setTasks:', data);
     } catch (err) {
       console.error('Error loading tasks:', err);
+        console.error('Full error object:', err);
       setError('Failed to load tasks. Make sure your backend is running.');
     } finally {
       setLoading(false);
@@ -111,31 +115,20 @@ function App() {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
+    console.log('Adding task:', newTaskTitle, 'due:', newTaskDueDate);
     try {
-      const newTask = await createTask({ title: newTaskTitle });
+      const newTask = await createTask({
+        title: newTaskTitle,
+        dueDate: newTaskDueDate || undefined,
+        progress: 'Not Started'
+      });
+      console.log('Task created:', newTask);
       setTasks([newTask, ...tasks]);
       setNewTaskTitle('');
+      setNewTaskDueDate('');
     } catch (err) {
-      console.error('Error creating task:', err);
+      console.error('Failed to add task:', err);
       setError('Failed to add task');
-    }
-  };
-
-  /**
-   * Toggle task completion
-   */
-  const handleToggleComplete = async (taskId) => {
-    try {
-      const task = tasks.find(t => t._id === taskId);
-      const updatedTask = await updateTask(taskId, { 
-        completed: !task.completed 
-      });
-      setTasks(tasks.map(t => 
-        t._id === taskId ? updatedTask : t
-      ));
-    } catch (err) {
-      console.error('Error toggling task:', err);
-      setError('Failed to update task');
     }
   };
 
@@ -144,73 +137,75 @@ function App() {
    */
   const handleDeleteTask = async (taskId) => {
     try {
-      await deleteTask(taskId);
+      await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
       setTasks(tasks.filter(t => t._id !== taskId));
-      if (activeTask?._id === taskId) {
-        setActiveTask(null);
-      }
     } catch (err) {
-      console.error('Error deleting task:', err);
       setError('Failed to delete task');
     }
   };
 
-  /**
-   * Select a task to work on with Pomodoro
-   */
-  const handleSelectTask = (task) => {
-    setActiveTask(task);
-  };
 
-  /**
-   * When a Pomodoro completes, increment the task's count
-   */
-  const handlePomodoroComplete = async () => {
-    if (!activeTask) return;
-
+  const updateTaskProgress = async (taskId, newProgress) => {
     try {
-      const updatedTask = await updateTask(activeTask._id, {
-        pomodoroCount: activeTask.pomodoroCount + 1
-      });
-      setTasks(tasks.map(t => 
-        t._id === activeTask._id ? updatedTask : t
-      ));
-      setActiveTask(updatedTask);
+      const updatedTask = await updateTask(taskId, { progress: newProgress });
+      setTasks(tasks.map(t => t._id === taskId ? updatedTask : t));
     } catch (err) {
-      console.error('Error updating Pomodoro count:', err);
-      setError('Failed to update Pomodoro count');
+      setError('Failed to update task');
+      loadTasks();
     }
   };
 
-  // Show login screen if not authenticated
+  const handleDragStart = (task) => {
+    console.log('Drag start:', task.title);
+    setDraggedTask(task);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (newProgress) => {
+    console.log('Drop to progress:', newProgress, 'dragged task:', draggedTask?.title);
+    if (draggedTask && draggedTask.progress !== newProgress) {
+      updateTaskProgress(draggedTask._id, newProgress);
+    }
+    setDraggedTask(null);
+  };
+
+  const getTasksByProgress = (progress) => {
+    const filtered = tasks.filter(t => t.progress === progress);
+    console.log(`Tasks with progress "${progress}":`, filtered.length, filtered);
+    return filtered;
+  };
+
+  const formatDueDate = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    
+    const diff = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return `${Math.abs(diff)} days overdue`;
+    if (diff <= 7) return `In ${diff} days`;
+    
+    return d.toLocaleDateString();
+  };
+
+  // this shows login screen if not authenticated
   if (!isAuthenticated && !loading) {
     return (
-      <div className="app" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px', 
-          backgroundColor: 'white', 
-          borderRadius: '12px', 
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-          maxWidth: '400px'
-        }}>
+      <div className="login-container">
+        <div className="login-card">
           <h1>🍅 FocusDesk</h1>
-          <p style={{ color: '#666', margin: '20px 0' }}>
-            Connect your Google Calendar to get started
-          </p>
-          <button 
-            onClick={handleLogin}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              backgroundColor: '#4285F4',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '500'
-            }}
-          >
+          <p className="login-subtitle">Connect your Google Calendar to get started</p>
+          <button onClick={handleLogin} className="login-button">
             Sign in with Google
           </button>
         </div>
@@ -218,10 +213,9 @@ function App() {
     );
   }
 
-  // Loading state
   if (loading) {
     return (
-      <div className="app loading">
+      <div className="loading">
         <div className="spinner"></div>
         <p>Loading tasks...</p>
       </div>
@@ -230,72 +224,157 @@ function App() {
 
   return (
     <div className="app">
-      <header>
-        <h1>🍅 FocusDesk</h1>
-        <p>Task Manager</p>
+      <header className="header">
+        <div>
+          <h1 className="title">🍅 FocusDesk</h1>
+          <p className="subtitle">Organized Task Manager</p>
+        </div>
         {user && (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '10px', 
-            marginTop: '10px',
-            fontSize: '14px'
-          }}>
-            <span>👤 {user.email}</span>
-            <button 
-              onClick={handleSync}
-              style={{
-                padding: '6px 12px',
-                backgroundColor: '#34A853',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '13px'
-              }}
-            >
+          <div className="user-section">
+            <span className="user-email">👤 {user.email}</span>
+            <button onClick={handleSync} className="sync-button">
               🔄 Sync Calendar
             </button>
           </div>
         )}
       </header>
-      
+
       {error && (
         <div className="error-banner">
           {error}
-          <button onClick={() => setError(null)}>Dismiss</button>
+          <button onClick={() => setError(null)} className="dismiss-button">×</button>
         </div>
       )}
 
-      <div className="main-content">
-        {/* Left side: Task List */}
-        <div className="task-section">
-          <h2>Tasks</h2>
-          
-          {/* Add Task Form */}
-          <form onSubmit={handleAddTask} className="add-task-form">
-            <input
-              type="text"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="What do you need to focus on?"
-              className="task-input"
-            />
-            <button type="submit" className="add-button">
-              Add Task
-            </button>
-          </form>
-
-          {/* Task List */}
-          <TaskList
-            tasks={tasks}
-            activeTask={activeTask}
-            onSelectTask={handleSelectTask}
-            onToggleComplete={handleToggleComplete}
-            onDeleteTask={handleDeleteTask}
+      <div className="container">
+        <div className="add-form">
+          <input
+            type="text"
+            id="task-title-input"
+            name="title"
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+            placeholder="What do you need to focus on?"
+            className="task-input"
           />
+          <label htmlFor="due-date-input" style={{ marginRight: '8px' }}>Due Date:</label>
+          <input
+            id="due-date-input"
+            name="dueDate"
+            type="date"
+            value={newTaskDueDate}
+            onChange={(e) => setNewTaskDueDate(e.target.value)}
+            className="date-input"
+          />
+          <button onClick={handleAddTask} className="add-button">
+            + Add Task
+          </button>
+        </div>
+
+        <div className="columns-container">
+          <div
+            className={`column ${draggedTask ? 'drag-over' : ''}`}
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop('Not Started')}
+          >
+            <h2 className="column-title" style={{color: '#6B7280'}}>
+              📋 Not Started ({getTasksByProgress('Not Started').length})
+            </h2>
+            <div className="task-list">
+              {getTasksByProgress('Not Started').map(task => (
+                <TaskCard
+                  key={task._id}
+                  task={task}
+                  onDragStart={handleDragStart}
+                  onDelete={handleDeleteTask}
+                  formatDueDate={formatDueDate}
+                  color="#6B7280"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div
+            className={`column ${draggedTask ? 'drag-over' : ''}`}
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop('In Progress')}
+          >
+            <h2 className="column-title" style={{color: '#F59E0B'}}>
+              ⚡ In Progress ({getTasksByProgress('In Progress').length})
+            </h2>
+            <div className="task-list">
+              {getTasksByProgress('In Progress').map(task => (
+                <TaskCard
+                  key={task._id}
+                  task={task}
+                  onDragStart={handleDragStart}
+                  onDelete={handleDeleteTask}
+                  formatDueDate={formatDueDate}
+                  color="#F59E0B"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div
+            className={`column ${draggedTask ? 'drag-over' : ''}`}
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop('Done')}
+          >
+            <h2 className="column-title" style={{color: '#10B981'}}>
+              ✅ Done ({getTasksByProgress('Done').length})
+            </h2>
+            <div className="task-list">
+              {getTasksByProgress('Done').map(task => (
+                <TaskCard
+                  key={task._id}
+                  task={task}
+                  onDragStart={handleDragStart}
+                  onDelete={handleDeleteTask}
+                  formatDueDate={formatDueDate}
+                  color="#10B981"
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function TaskCard({ task, onDragStart, onDelete, formatDueDate, color }) {
+  const dueText = formatDueDate(task.dueDate);
+  const isOverdue = dueText && dueText.includes('overdue');
+
+  return (
+    <div
+      draggable
+      onDragStart={() => onDragStart(task)}
+      className="task-card"
+      style={{borderLeft: `4px solid ${color}`}}
+    >
+      <div className="task-content">
+        <p className="task-title">{task.title}</p>
+        {dueText && (
+          <span 
+            className="due-date"
+            style={{
+              color: isOverdue ? '#EF4444' : '#6B7280',
+              fontWeight: isOverdue ? '600' : '400'
+            }}
+          >
+            📅 {dueText}
+          </span>
+        )}
+      </div>
+      <button
+        onClick={() => onDelete(task._id)}
+        className="delete-button"
+      >
+        🗑️
+      </button>
     </div>
   );
 }
