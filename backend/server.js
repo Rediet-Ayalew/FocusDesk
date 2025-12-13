@@ -10,19 +10,13 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5174',
   'https://focusdesk0.netlify.app'
 
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: 'https://focusdesk0.netlify.app',
   credentials: true
 }));
 
@@ -35,12 +29,12 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI 
+  }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000
+    secure: true,
+    sameSite: 'none'
   }
 }));
 
