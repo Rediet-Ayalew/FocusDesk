@@ -29,13 +29,13 @@ app.use(cors({
 
 app.use(express.json());
 
-const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo')(session);
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+  store: new MongoStore({ url: process.env.MONGODB_URI }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
@@ -43,6 +43,7 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000
   }
 }));
+
 
 
 // MongoDB Connection
