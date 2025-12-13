@@ -28,15 +28,22 @@ app.use(cors({
 
 
 app.use(express.json());
+
+const MongoStore = require('connect-mongo');
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-    cookie: {
-    secure: true,        // required for HTTPS (Netlify)
-    sameSite: 'none'     // required for cross-site cookies
+  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
+
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -350,6 +357,7 @@ setInterval(async () => {
 }, 5 * 60 * 1000);
 
 // Start server
-app.listen(5000, () => {
-  console.log('Server running on http://localhost:5000');
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

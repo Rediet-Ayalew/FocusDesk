@@ -54,14 +54,19 @@ function App() {
   /**
    * Google login
    */
-  const handleLogin = async () => {
-    try {
-      window.location.href = `${API_URL}/api/auth/google`;
-    } catch (error) {
-      console.error('Login failed:', error);
-      setError('Failed to start login process');
-    }
-  };
+
+const handleLogin = async () => {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/google`, {
+      credentials: 'include'
+    });
+    const data = await response.json();
+    window.location.href = data.url;
+  } catch (error) {
+    console.error('Login failed:', error);
+    setError('Failed to start login process');
+  }
+};
 
   /**
    * this allows Sync with the Google Calendar
